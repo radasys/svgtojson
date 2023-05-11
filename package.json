@@ -1,0 +1,15 @@
+{
+  "name": "svgtojson",
+  "description": "Open a given directory, read SVG files there, convert to JSON and save on another folder.",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "svgson": "^5.2.1"
+  },
+  "author": {
+    "name" : "Radamés Ibañez",
+    "email": "rada.work.email@gmail.com",
+    "url": "https://radasys.com.ar"
+  }
+}
