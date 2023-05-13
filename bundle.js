@@ -1,32 +1,42 @@
-const JSONFilename = './json_output/imagesDataArray.json'
+const JSONFILENAME = './json_output/imagesDataArray.json'
 
-const imagesDataArray = fetch(JSONFilename).then((response) => response.json());
+const IMAGESDATAARRAY = fetch(JSONFILENAME).then((response) => response.json());
 
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
+const CANVAS = document.getElementById("canvas");
+const CTX = CANVAS.getContext("2d");
 
-const selectImage = (imageFilename, imageDataArray) => {
-    
+// This function searches for an image in the IMAGESDATAARRAY.
+function searchImage(searchedImage, imageDataArray) {
+    const RESULT = imageDataArray.find(image => image.imageName === searchedImage)
+    return RESULT;
 }
 
-// This function will print an image in a canvas.
-function printImage(imageData, ctx) {
+// This function prints an image in a CANVAS.
+function printImage(imageData, CTX) {
 
-    pathClassesArray.forEach(path => {
+    imageData.paths.forEach(path => {
 
-        const newPath = new Path2D(path.d);
+        const NEWPATH = new Path2D(path.d);
 
         if (path.class) {
-            const pathClass = path.class;
-            const classColor = colorFillClassesArray.find((elem) => elem.class === pathClass);
-            const color = classColor.color;
+            const PATHCLASS = path.class;
+            const CLASSCOLOR = imageData.styles.find((elem) => elem.class === PATHCLASS);
+            const COLOR = CLASSCOLOR.color;
 
-            ctx.beginPath();
-            ctx.fillStyle = color;
-            ctx.strokeStyle = color;
-            ctx.fill(newPath);
-            ctx.stroke(newPath);
+            CTX.beginPath();
+            CTX.fillStyle = COLOR;
+            CTX.strokeStyle = COLOR;
+            CTX.fill(NEWPATH);
+            CTX.stroke(NEWPATH);
         }
     })
 }
 
+IMAGESDATAARRAY.then(res => {
+    const IMAGENAME = "12.svg";
+    const SEARCHEDIMAGE = searchImage(IMAGENAME, res)
+    if (SEARCHEDIMAGE != null) {
+        printImage(SEARCHEDIMAGE, CTX);
+    }
+    else console.log("Image does not exists.");
+})
