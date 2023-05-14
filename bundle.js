@@ -1,42 +1,42 @@
-const JSONFILENAME = './json_output/imagesDataArray.json'
+const jsonFilename = './json_output/imagesDataArray.json'
 
-const IMAGESDATAARRAY = fetch(JSONFILENAME).then((response) => response.json());
+const imagesDataArray = fetch(jsonFilename).then((response) => response.json());
 
-const CANVAS = document.getElementById("canvas");
-const CTX = CANVAS.getContext("2d");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
 
-// This function searches for an image in the IMAGESDATAARRAY.
+// This function searches for an image in the imagesDataArray.
 function searchImage(searchedImage, imageDataArray) {
-    const RESULT = imageDataArray.find(image => image.imageName === searchedImage)
-    return RESULT;
+    const result = imageDataArray.find(image => image.imageName === searchedImage)
+    return result;
 }
 
-// This function prints an image in a CANVAS.
-function printImage(imageData, CTX) {
+// This function prints an image in a canvas.
+function printImage(imageData, ctx) {
 
     imageData.paths.forEach(path => {
 
-        const NEWPATH = new Path2D(path.d);
+        const newPath = new Path2D(path.d);
 
         if (path.class) {
-            const PATHCLASS = path.class;
-            const CLASSCOLOR = imageData.styles.find((elem) => elem.class === PATHCLASS);
-            const COLOR = CLASSCOLOR.color;
+            const pathClass = path.class;
+            const classColor = imageData.styles.find((elem) => elem.class === pathClass);
+            const color = classColor.color;
 
-            CTX.beginPath();
-            CTX.fillStyle = COLOR;
-            CTX.strokeStyle = COLOR;
-            CTX.fill(NEWPATH);
-            CTX.stroke(NEWPATH);
+            ctx.beginPath();
+            ctx.fillStyle = color;
+            ctx.strokeStyle = color;
+            ctx.fill(newPath);
+            ctx.stroke(newPath);
         }
     })
 }
 
-IMAGESDATAARRAY.then(res => {
-    const IMAGENAME = "12.svg";
-    const SEARCHEDIMAGE = searchImage(IMAGENAME, res)
-    if (SEARCHEDIMAGE != null) {
-        printImage(SEARCHEDIMAGE, CTX);
+imagesDataArray.then(res => {
+    const imageName = "08.svg";
+    const searchedImage = searchImage(imageName, res)
+    if (searchedImage != null) {
+        printImage(searchedImage, ctx);
     }
     else console.log("Image does not exists.");
 })
