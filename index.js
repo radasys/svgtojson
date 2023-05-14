@@ -1,14 +1,24 @@
 const fs = require('fs');
-
 const SVGPath = './svg_images/';
-const SVGtoJSONOutputFile = './json_output/svgtojson-output.json'
-const JSONImagesDataArrayFile = './json_output/imagesDataArray.json'
-
-const structuralElementList = ['defs', 'g', 'svg', 'symbol', 'use'];
-const styleElementList = ['style'];
-
+const SVGtoJSONOutputFile = './json_output/svgtojson-output.json';
+const JSONImagesDataArrayFile = './json_output/imagesDataArray.json';
 const imageDataArray = [];
 
+// Open SVG Images folder (we avoid searching in subfolders, we only search files on the specified path).
+const readSVGFiles = () => {
+    const dirents = fs.readdirSync(SVGPath, { withFileTypes: true });
+    const filesNames = dirents.filter(dirent => dirent.isFile()).map(dirent => dirent.name);
+    let JSONArray = [];
+    filesNames.forEach(SVGFile => {
+        const FilenameWithPath = SVGPath + SVGFile;
+        const SVGFileContent = readFile(FilenameWithPath);
+        const JSONImage = convertSVGtoJSON(SVGFileContent, SVGFile);
+        JSONArray.push(JSONImage);
+    });
+    return JSONArray;
+}
+
+// Synchronous file reading.
 const readFile = (file) => {
     try {
         const data = fs.readFileSync(file, 'utf8');
@@ -18,6 +28,7 @@ const readFile = (file) => {
     }
 }
 
+// Convert SVG to JSON using svgson.
 function convertSVGtoJSON(SVGFileContent, SVGFilename) {
     const { parseSync } = require('svgson')
     const JSONImage = parseSync(SVGFileContent);
@@ -25,6 +36,7 @@ function convertSVGtoJSON(SVGFileContent, SVGFilename) {
     return JSONImage;
 }
 
+// Save SVG to JSON output to local file.
 function saveJSONOutput(JSONImage) {
     JSONImageToString = JSON.stringify(JSONImage);
 
@@ -39,6 +51,7 @@ function saveJSONOutput(JSONImage) {
     }
 }
 
+// Save imagesDataArray to JSON file.
 function saveImagesDataArray(ImagesDataArray) {
     JSONImagesDataArray = JSON.stringify(ImagesDataArray);
 
@@ -53,22 +66,22 @@ function saveImagesDataArray(ImagesDataArray) {
     }
 }
 
-// This function will create the styles array using regex and an auxiliar iterator.
+// Create styles array using regex and an auxiliar iterator.
 // styles array example:
 // 0: {class: 'st0', color: '#BF8334'}
 // 1: {class: 'st1', color: '#BF2F2F'}
 // 2: {class: 'st2', color: '#D2F4F5'}
-const fillColorFillClassesArray = (child, colorFillClassesArray) => {
+const setColorClassesArray = (child, colorClassesArray) => {
     const colorFillClassesString = child.children[0].value;
     const regEx = /\.([a-zA-Z0-9-]+){fill:([#a-zA-Z0-9]+);}/g;
     const colorFillClassesIterator = colorFillClassesString.matchAll(regEx);
     for (const iterator of colorFillClassesIterator) {
-        colorFillClassesArray.push({ class: iterator[1], color: iterator[2] });
+        colorClassesArray.push({ class: iterator[1], color: iterator[2] });
     }
-    return colorFillClassesArray;
+    return colorClassesArray;
 }
 
-// This function will receive the path child and send the class and the d parameters.
+// Receive the path child and send the class and the d parameters.
 // childAttributes example:
 // { class: "st1", d: "M813.88,239..."}
 // Note: Before retrieving child attributes, the function sanitizes the d parameter that may contain line breaks. 
@@ -79,7 +92,22 @@ const retrieveChildAttributes = (child) => {
     return childAttributes;
 };
 
-// This recursive function will navigate through child/children until finding the path.
+// Recursive function that navigates through child/children until finding the path.
+// Then, the function will call to retrieveChildAttributes with the path child.
+const findStyles = (child, colorClassesArray) => {
+    if (child.name === 'style') {
+        return setColorClassesArray(child, colorClassesArray);
+    } else if (child.children && child.children.length > 0) {
+        for (const nestedChild of child.children) {
+            const result = findStyles(nestedChild, colorClassesArray);
+            if (result) {
+                return result;
+            }
+        }
+    }
+};
+
+// Recursive function that navigates through child/children until finding the path.
 // Then, the function will call to retrieveChildAttributes with the path child.
 const findPath = (child) => {
     if (child.name === 'path') {
@@ -94,29 +122,29 @@ const findPath = (child) => {
     }
 };
 
+// Create imagesDataArray, searching for styles and paths on each child.
 const createImagesDataArray = () => {
     const JSONOutput = JSON.parse(readFile(SVGtoJSONOutputFile));
     JSONOutput.forEach((image) => {
         const imageName = image.filename;
         const imageChildrenArray = image.children;
-        let colorFillClassesArray = [];
+        let colorClassesArray = [];
         let pathClassesArray = [];
         // forEach child in image
         imageChildrenArray.forEach((child) => {
-            // if child.name is a style child, we fill the colorFillClassesArray
-            if (styleElementList.find(elem => elem === child.name)) {
-                fillColorFillClassesArray(child, colorFillClassesArray);
+            // That means that the color classes array is not filled yet.
+            if (colorClassesArray.length === 0) {
+                findStyles(child, colorClassesArray);
             }
-
-            // if child.name is a structural child (e.g.: g or defs, we fill the pathClassesArray)
-            if (structuralElementList.find(elem => elem === child.name)) {
+            // In other case, let's find the path.
+            else {
                 const pathData = findPath(child);
                 pathClassesArray.push(pathData);
             }
         });
         const imageData = {
             imageName: imageName,
-            styles: colorFillClassesArray,
+            styles: colorClassesArray,
             paths: pathClassesArray
         }
         imageDataArray.push(imageData);
@@ -125,19 +153,13 @@ const createImagesDataArray = () => {
 }
 
 function main() {
-    // We avoid searching in subfolders, we only search on the specified path.
-    const dirents = fs.readdirSync(SVGPath, { withFileTypes: true });
-    const filesNames = dirents.filter(dirent => dirent.isFile()).map(dirent => dirent.name);
-    let JSONArray = [];
-    filesNames.forEach(SVGFile => {
-        const FilenameWithPath = SVGPath + SVGFile;
-        const SVGFileContent = readFile(FilenameWithPath);
-        const JSONImage = convertSVGtoJSON(SVGFileContent, SVGFile);
-        JSONArray.push(JSONImage);
-    })
+
+    const JSONArray = readSVGFiles();
     saveJSONOutput(JSONArray);
+
     const ImagesDataArray = createImagesDataArray();
     saveImagesDataArray(ImagesDataArray);
+
 }
 
 main();
