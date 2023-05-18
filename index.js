@@ -7,9 +7,10 @@ const imageDataArray = [];
 // Open SVG Images folder (we avoid searching in subfolders, we only search files on the specified path).
 const readSVGFiles = () => {
     const dirents = fs.readdirSync(SVGPath, { withFileTypes: true });
-    const filesNames = dirents.filter(dirent => dirent.isFile()).map(dirent => dirent.name);
+    const fileNames = dirents.filter(dirent => dirent.isFile()).map(dirent => dirent.name);
+    const fileNamesWithoutHidden = fileNames.filter(fileName => !(/(^|\/)\.[^\/\.]/g).test(fileName));
     let JSONArray = [];
-    filesNames.forEach(SVGFile => {
+    fileNamesWithoutHidden.forEach(SVGFile => {
         const FilenameWithPath = SVGPath + SVGFile;
         const SVGFileContent = readFile(FilenameWithPath);
         const JSONImage = convertSVGtoJSON(SVGFileContent, SVGFile);
