@@ -5,8 +5,6 @@
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
-    "cloudmersive-convert-api-client": "^2.7.4",
-    "cloudmersive-validate-api-client": "^1.1.4",
     "svgson": "^5.2.1"
   },
   "author": {
